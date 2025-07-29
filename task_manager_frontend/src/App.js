@@ -1,47 +1,88 @@
-import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from "react";
+import "./App.css";
+import {
+  AuthProvider,
+  useAuth,
+} from "./components/AuthContext";
+import Sidebar from "./components/Sidebar";
+import Header from "./components/Header";
+import TaskList from "./components/TaskList";
+import TaskModal from "./components/TaskModal";
+import CategoryModal from "./components/CategoryModal";
+import LoginPage from "./components/LoginPage";
 
 // PUBLIC_INTERFACE
 function App() {
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState("light");
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [editTask, setEditTask] = useState(null); // For editing existing task
 
-  // Effect to apply theme to document element
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
   // PUBLIC_INTERFACE
   const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
 
+  // User session & UI routing
   return (
-    <div className="App">
-      <header className="App-header">
-        <button 
-          className="theme-toggle" 
-          onClick={toggleTheme}
-          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-        >
-          {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
-        </button>
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <p>
-          Current theme: <strong>{theme}</strong>
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <AuthProvider>
+      <AppLayout
+        theme={theme}
+        toggleTheme={toggleTheme}
+        taskModalOpen={taskModalOpen}
+        setTaskModalOpen={setTaskModalOpen}
+        categoryModalOpen={categoryModalOpen}
+        setCategoryModalOpen={setCategoryModalOpen}
+        editTask={editTask}
+        setEditTask={setEditTask}
+      />
+    </AuthProvider>
+  );
+}
+
+// Layout, sidebar/main, modal structure,
+// keeps all contexts/providers & UI hierarchy in one spot.
+function AppLayout({
+  theme,
+  toggleTheme,
+  taskModalOpen,
+  setTaskModalOpen,
+  categoryModalOpen,
+  setCategoryModalOpen,
+  editTask,
+  setEditTask,
+}) {
+  const { user } = useAuth();
+
+  if (!user) return <LoginPage />;
+
+  return (
+    <div className="App app-flex">
+      <Header toggleTheme={toggleTheme} theme={theme} />
+      <div className="app-flex-body">
+        <Sidebar
+          onCreateCategory={() => setCategoryModalOpen(true)}
+        />
+        <main className="main-content">
+          <TaskList
+            onAddTask={() => { setEditTask(null); setTaskModalOpen(true); }}
+            onEditTask={(task) => { setEditTask(task); setTaskModalOpen(true); }}
+          />
+        </main>
+      </div>
+      <TaskModal
+        open={taskModalOpen}
+        onClose={() => { setEditTask(null); setTaskModalOpen(false); }}
+        editTask={editTask}
+      />
+      <CategoryModal
+        open={categoryModalOpen}
+        onClose={() => setCategoryModalOpen(false)}
+      />
     </div>
   );
 }
